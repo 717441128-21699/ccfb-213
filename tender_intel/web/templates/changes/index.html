@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}变更记录 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">变更记录（共 {{ total }} 条）</h1>
+<div class="panel">
+  <form method="get" class="toolbar">
+    <select name="type">
+      <option value="">全部事件</option>
+      {% for t in ['new', 'correction', 'cancellation', 'field_update', 'delist', 'relist'] %}
+        <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="submit">筛选</button>
+    <a class="btn ghost" href="{{ url_for('changes.index') }}">重置</a>
+  </form>
+  <table>
+    <thead><tr><th>时间</th><th>事件</th><th>公告</th><th>字段</th>
+                <th>旧值 → 新值</th><th>站点/副本</th><th>说明</th></tr></thead>
+    <tbody>
+    {% for ch in changes %}
+      <tr>
+        <td class="mono">{{ fmt_ts(ch.created_at) }}</td>
+        <td><span class="badge blue">{{ ch.change_type }}</span></td>
+        <td><a href="{{ url_for('notices.detail', canonical_id=ch.canonical_id) }}">
+          {{ ch.canonical_title }}</a></td>
+        <td class="mono">{{ ch.field or '—' }}</td>
+        <td class="mono" style="max-width:300px;word-break:break-all">
+          {% if ch.old_value or ch.new_value %}
+            {{ ch.old_value or '∅' }} → {{ ch.new_value or '∅' }}
+          {% else %}—{% endif %}
+        </td>
+        <td class="mono">{{ ch.site_code or '—' }}{% if ch.remote_id %}:{{ ch.remote_id }}{% endif %}</td>
+        <td>{{ ch.detail or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">暂无变更记录</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pager">
+    {% if page > 1 %}<a class="btn small ghost" href="?type={{ selected_type }}&page={{ page-1 }}">上一页</a>{% endif %}
+    <span class="muted">第 {{ page }} / {{ total_pages }} 页</span>
+    {% if page < total_pages %}<a class="btn small ghost" href="?type={{ selected_type }}&page={{ page+1 }}">下一页</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}运行 #{{ run.id }} - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">
+  抓取运行 #{{ run.id }}
+  {{ status_badge(run.status) }}
+  <span class="badge blue">{{ '全量' if run.mode == 'full' else '增量' }}</span>
+</h1>
+
+<div class="panel">
+  <dl class="kv">
+    <dt>站点范围</dt><dd class="mono">{{ run.site_codes or '全部启用站点' }}</dd>
+    <dt>开始时间</dt><dd class="mono">{{ fmt_ts(run.started_at) }}</dd>
+    <dt>结束时间</dt><dd class="mono">{{ fmt_ts(run.finished_at) }}</dd>
+    <dt>错误信息</dt><dd>{{ run.error or '—' }}</dd>
+  </dl>
+</div>
+
+<div class="panel">
+  <h2>统计</h2>
+  {% if stats %}
+  <div class="cards">
+    {% for key, val in stats.items() if key != 'per_site' %}
+      <div class="card"><div class="label">{{ key }}</div><div class="num">{{ val }}</div></div>
+    {% endfor %}
+  </div>
+  {% if stats.per_site %}
+    <h2 style="margin-top:18px">分站点统计</h2>
+    <table>
+      <thead><tr><th>站点</th><th>翻页</th><th>列表项</th><th>新增</th><th>更新</th>
+                  <th>详情页</th><th>空字段页</th><th>解析失败</th><th>下架</th></tr></thead>
+      <tbody>
+      {% for code, s in stats.per_site.items() %}
+        <tr>
+          <td class="mono">{{ code }}</td>
+          <td>{{ s.pages }}</td><td>{{ s.items }}</td><td>{{ s.new }}</td>
+          <td>{{ s.updated }}</td><td>{{ s.detail_pages }}</td>
+          <td>{{ s.empty_core_pages }}</td><td>{{ s.parse_failures }}</td>
+          <td>{{ s.get('delisted', 0) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  {% else %}<p class="muted">暂无统计（任务仍在运行或未正常结束）</p>{% endif %}
+</div>
+
+<div class="panel">
+  <h2>断点（中断后从这里继续）</h2>
+  <table>
+    <thead><tr><th>站点</th><th>阶段</th><th>页码</th><th>最后 remote_id</th>
+                <th>已见副本数</th><th>更新时间</th></tr></thead>
+    <tbody>
+    {% for cp in checkpoints %}
+      <tr>
+        <td class="mono">{{ cp.site_code }}</td><td>{{ cp.stage }}</td>
+        <td>{{ cp.page }}</td><td class="mono">{{ cp.last_remote_id or '—' }}</td>
+        <td>{{ cp.seen_remote_ids_json | length }}</td>
+        <td class="mono">{{ fmt_ts(cp.updated_at) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted">无残留断点（已正常完成或尚未开始）</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if run_alerts %}
+<div class="panel">
+  <h2>本次运行告警</h2>
+  <table>
+    <thead><tr><th>级别</th><th>类型</th><th>站点</th><th>信息</th><th>时间</th></tr></thead>
+    <tbody>
+    {% for a in run_alerts %}
+      <tr>
+        <td>{{ severity_badge(a.severity) }}</td>
+        <td class="mono">{{ a.alert_type }}</td>
+        <td class="mono">{{ a.site_code or '—' }}</td>
+        <td>{{ a.message }}</td>
+        <td class="mono">{{ fmt_ts(a.created_at) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if failures %}
+<div class="panel">
+  <h2>解析失败明细（最近 50 条）</h2>
+  <table>
+    <thead><tr><th>站点</th><th>remote_id</th><th>字段</th><th>原始值</th><th>原因</th><th>时间</th></tr></thead>
+    <tbody>
+    {% for f in failures %}
+      <tr>
+        <td class="mono">{{ f.code }}</td>
+        <td class="mono">{{ f.remote_id }}</td>
+        <td>{{ f.field }}</td>
+        <td class="mono">{{ f.raw_value or '—' }}</td>
+        <td>{{ f.reason }}</td>
+        <td class="mono">{{ fmt_ts(f.created_at) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<a class="btn ghost" href="{{ url_for('tasks.index') }}">返回任务列表</a>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}站点配置 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">站点配置</h1>
+<div class="panel">
+  <table>
+    <thead>
+      <tr><th>代码</th><th>站点名称</th><th>地址</th><th>限流/分钟</th>
+          <th>在线副本</th><th>模板</th><th>状态</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+    {% for s in sites %}
+      <tr>
+        <td class="mono">{{ s.code }}</td>
+        <td>{{ s.name }}</td>
+        <td class="mono">{{ s.base_url }}</td>
+        <td>{{ s.rate_limit_per_min }}</td>
+        <td>{{ s.replica_count }}</td>
+        <td>
+          {% if s.selector_version == 2 %}<span class="badge purple">v2 改版</span>
+          {% else %}<span class="badge blue">v1</span>{% endif %}
+        </td>
+        <td>
+          {% if s.enabled %}<span class="badge green">启用</span>
+          {% else %}<span class="badge gray">停用</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap">
+          <a class="btn small secondary" href="{{ url_for('sites.edit', site_id=s.id) }}">编辑</a>
+          <form method="post" action="{{ url_for('sites.test_connection', site_id=s.id) }}" style="display:inline">
+            <button class="btn small ghost" type="submit">测连通</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

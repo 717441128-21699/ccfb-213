@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}招投标情报控制台{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h1>招投标情报</h1>
+    <nav>
+      {% set items = [
+        ('dashboard.index', '总览'),
+        ('sites.index', '站点配置'),
+        ('tasks.index', '任务调度'),
+        ('notices.index', '公告库'),
+        ('changes.index', '变更记录'),
+        ('alerts.index', '告警中心'),
+      ] %}
+      {% for endpoint, label in items %}
+        <a href="{{ url_for(endpoint) }}"
+           class="{{ 'active' if request.endpoint and request.endpoint.startswith(endpoint.split('.')[0]) }}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+  </aside>
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

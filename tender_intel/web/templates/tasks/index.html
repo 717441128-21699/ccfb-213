@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}任务调度 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">任务调度</h1>
+
+<div class="panel">
+  <h2>手动触发抓取</h2>
+  <form method="post" action="{{ url_for('tasks.trigger_run') }}">
+    <div class="toolbar">
+      <label>模式
+        <select name="mode">
+          <option value="incremental">增量（只抓新公告，按水位提前停翻页）</option>
+          <option value="full">全量（逐页重抓，同步下架状态）</option>
+        </select>
+      </label>
+      <label>站点（不勾=全部）
+        <select name="site_codes" multiple size="1" style="min-width:180px">
+          {% for s in sites %}<option value="{{ s.code }}">{{ s.code }} · {{ s.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" name="no_browser"> 无浏览器模式（API 合成快照）
+      </label>
+      <button class="btn" type="submit">立即运行</button>
+    </div>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>调度计划</h2>
+  <form method="post" action="{{ url_for('tasks.create_schedule') }}" class="toolbar">
+    <select name="mode">
+      <option value="incremental">增量</option>
+      <option value="full">全量</option>
+    </select>
+    <select name="site_code">
+      <option value="">全部站点</option>
+      {% for s in sites %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+    </select>
+    <label>间隔（分钟）<input name="interval_minutes" type="number" value="60" min="1" style="width:110px"></label>
+    <button class="btn secondary" type="submit">新增计划</button>
+  </form>
+  <table style="margin-top:12px">
+    <thead><tr><th>ID</th><th>站点</th><th>模式</th><th>间隔(分)</th><th>启用</th>
+                <th>上次运行</th><th>下次运行</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for sc in schedules %}
+      <tr>
+        <td class="mono">#{{ sc.id }}</td>
+        <td>{{ sc.site_code or '全部' }}</td>
+        <td>{{ '全量' if sc.mode == 'full' else '增量' }}</td>
+        <td>{{ sc.interval_minutes }}</td>
+        <td>{% if sc.enabled %}<span class="badge green">启用</span>
+            {% else %}<span class="badge gray">停用</span>{% endif %}</td>
+        <td class="mono">{{ fmt_ts(sc.last_run_at) }}</td>
+        <td class="mono">{{ fmt_ts(sc.next_run_at) }}</td>
+        <td style="white-space:nowrap">
+          <form method="post" action="{{ url_for('tasks.toggle_schedule', sched_id=sc.id) }}" style="display:inline">
+            <button class="btn small ghost">{{ '停用' if sc.enabled else '启用' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('tasks.delete_schedule', sched_id=sc.id) }}" style="display:inline">
+            <button class="btn small danger">删除</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="muted">暂无调度计划（调度器进程运行后按计划自动派单）</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>抓取运行记录</h2>
+  <table>
+    <thead><tr><th>ID</th><th>模式</th><th>状态</th><th>站点</th><th>开始</th><th>结束</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for run in runs %}
+      <tr>
+        <td class="mono">#{{ run.id }}</td>
+        <td>{{ '全量' if run.mode == 'full' else '增量' }}</td>
+        <td>{{ status_badge(run.status) }}</td>
+        <td class="mono">{{ run.site_codes or '全部' }}</td>
+        <td class="mono">{{ fmt_ts(run.started_at) }}</td>
+        <td class="mono">{{ fmt_ts(run.finished_at) }}</td>
+        <td style="white-space:nowrap">
+          <a class="btn small ghost" href="{{ url_for('tasks.detail', run_id=run.id) }}">详情</a>
+          {% if run.status == 'running' %}
+            <form method="post" action="{{ url_for('tasks.cancel', run_id=run.id) }}" style="display:inline">
+              <button class="btn small danger">取消</button>
+            </form>
+          {% elif run.status in ('failed','cancelled') %}
+            <form method="post" action="{{ url_for('tasks.resume', run_id=run.id) }}" style="display:inline">
+              <button class="btn small secondary">断点续跑</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

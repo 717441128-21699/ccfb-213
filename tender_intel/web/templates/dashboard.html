@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}总览 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">总览</h1>
+
+<div class="cards">
+  <div class="card"><div class="label">启用站点</div><div class="num">{{ counts.sites }}</div></div>
+  <div class="card"><div class="label">主公告（去重后）</div><div class="num">{{ counts.canonical }}</div></div>
+  <div class="card"><div class="label">站点副本</div><div class="num">{{ counts.replicas }}</div></div>
+  <div class="card"><div class="label">更正/废标</div><div class="num">{{ counts.children }}</div></div>
+  <div class="card"><div class="label">未处理告警</div><div class="num" style="color: var(--red)">{{ counts.alerts }}</div></div>
+  <div class="card"><div class="label">解析失败记录</div><div class="num" style="color: var(--amber)">{{ counts.failures }}</div></div>
+</div>
+
+<div class="panel">
+  <h2>最近抓取任务</h2>
+  <table>
+    <thead><tr><th>ID</th><th>模式</th><th>状态</th><th>站点</th><th>开始</th><th>结束</th><th></th></tr></thead>
+    <tbody>
+    {% for run in recent_runs %}
+      <tr>
+        <td class="mono">#{{ run.id }}</td>
+        <td>{{ '全量' if run.mode == 'full' else '增量' }}</td>
+        <td>{{ status_badge(run.status) }}</td>
+        <td class="mono">{{ run.site_codes or '全部' }}</td>
+        <td class="mono">{{ fmt_ts(run.started_at) }}</td>
+        <td class="mono">{{ fmt_ts(run.finished_at) }}</td>
+        <td><a class="btn small ghost" href="{{ url_for('tasks.detail', run_id=run.id) }}">详情</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">还没有抓取任务</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>各站点在线副本</h2>
+  <table>
+    <thead><tr><th>站点</th><th>名称</th><th>在线副本</th><th>模板选择器</th><th>状态</th></tr></thead>
+    <tbody>
+    {% for s in site_rows %}
+      <tr>
+        <td class="mono">{{ s.code }}</td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.replica_count }}</td>
+        <td>v{{ selector_versions.get(s.id, 1) }}</td>
+        <td>
+          {% if s.enabled %}<span class="badge green">启用</span>
+          {% else %}<span class="badge gray">停用</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ notice.title }} - 公告库{% endblock %}
+{% block content %}
+<h1 class="page-title">
+  {{ type_badge(notice.notice_type) }}
+  {% if notice.status == 'cancelled' %}<span class="badge red">已废标</span>{% endif %}
+  {{ notice.title }}
+</h1>
+
+{% if parent %}
+<div class="panel" style="border-left:4px solid var(--purple)">
+  <strong>原公告：</strong>
+  <a href="{{ url_for('notices.detail', canonical_id=parent.id) }}">{{ parent.title }}</a>
+  <span class="muted mono" style="margin-left:10px">{{ parent.project_code }}</span>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>结构化字段</h2>
+  <dl class="kv">
+    <dt>项目编号</dt><dd class="mono">{{ notice.project_code or '—' }}</dd>
+    <dt>采购单位</dt><dd>{{ notice.purchaser or '—' }}</dd>
+    <dt>预算金额</dt><dd>{{ fmt_amount(notice.budget_amount) }}</dd>
+    <dt>截止时间</dt><dd class="mono">{{ fmt_ts(notice.deadline_at) }}</dd>
+    <dt>首次发现</dt><dd class="mono">{{ fmt_ts(notice.first_seen_at) }}</dd>
+    <dt>最近事件</dt><dd class="mono">{{ fmt_ts(notice.latest_event_at) }}</dd>
+    <dt>去重指纹</dt><dd class="mono">{{ notice.fingerprint }}</dd>
+  </dl>
+</div>
+
+<div class="panel">
+  <h2>站点副本（{{ replicas | length }}）</h2>
+  <table>
+    <thead><tr><th>站点</th><th>remote_id</th><th>类型</th><th>状态</th><th>发布时间</th>
+                <th>抓取时间</th><th>来源链接</th><th>快照</th></tr></thead>
+    <tbody>
+    {% for r in replicas %}
+      <tr>
+        <td class="mono">{{ r.site_code }}<div class="muted" style="font-size:12px">{{ r.site_name }}</div></td>
+        <td class="mono">{{ r.remote_id }}</td>
+        <td>{{ type_badge(r.notice_type) }}</td>
+        <td>{{ status_badge(r.status) }}</td>
+        <td class="mono">{{ fmt_ts(r.published_at) }}</td>
+        <td class="mono">{{ fmt_ts(r.fetched_at) }}</td>
+        <td class="mono">{{ r.url or '—' }}</td>
+        <td><a class="btn small ghost"
+               href="{{ url_for('notices.snapshots', site_notice_id=r.id) }}">查看原始快照</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if children %}
+<div class="panel" style="border-left:4px solid var(--purple)">
+  <h2>更正 / 废标公告（挂在本公告下）</h2>
+  <table>
+    <thead><tr><th>类型</th><th>标题</th><th>预算金额</th><th>截止时间</th><th>首次发现</th></tr></thead>
+    <tbody>
+    {% for c in children %}
+      <tr>
+        <td>{{ type_badge(c.notice_type) }}</td>
+        <td><a href="{{ url_for('notices.detail', canonical_id=c.id) }}">{{ c.title }}</a></td>
+        <td>{{ fmt_amount(c.budget_amount) }}</td>
+        <td class="mono">{{ fmt_ts(c.deadline_at) }}</td>
+        <td class="mono">{{ fmt_ts(c.first_seen_at) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>变更记录</h2>
+  <table>
+    <thead><tr><th>类型</th><th>字段</th><th>旧值</th><th>新值</th><th>站点</th><th>说明</th><th>时间</th></tr></thead>
+    <tbody>
+    {% for ch in changes %}
+      <tr>
+        <td><span class="badge blue">{{ ch.change_type }}</span></td>
+        <td class="mono">{{ ch.field or '—' }}</td>
+        <td class="mono">{{ ch.old_value or '—' }}</td>
+        <td class="mono">{{ ch.new_value or '—' }}</td>
+        <td class="mono">{{ ch.site_code or '—' }}</td>
+        <td>{{ ch.detail or '—' }}</td>
+        <td class="mono">{{ fmt_ts(ch.created_at) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">暂无变更</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if failures %}
+<div class="panel">
+  <h2>解析失败记录</h2>
+  <table>
+    <thead><tr><th>站点</th><th>remote_id</th><th>字段</th><th>原始值</th><th>原因</th><th>时间</th></tr></thead>
+    <tbody>
+    {% for f in failures %}
+      <tr>
+        <td class="mono">{{ f.code }}</td><td class="mono">{{ f.remote_id }}</td>
+        <td>{{ f.field }}</td><td class="mono">{{ f.raw_value or '—' }}</td>
+        <td>{{ f.reason }}</td><td class="mono">{{ fmt_ts(f.created_at) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<a class="btn ghost" href="{{ url_for('notices.index') }}">返回公告库</a>
+{% endblock %}

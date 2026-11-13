@@ -16,3 +16,7 @@ node_modules/
 __pycache__/
 .venv/
 venv/
+
+# 招投标情报系统运行期数据（真值库、SQLite、日志）
+data/
+.pytest_cache/

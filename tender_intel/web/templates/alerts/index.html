@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}告警中心 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">
+  告警中心
+  <span class="badge red">未处理 {{ open_count }}</span>
+</h1>
+<div class="panel">
+  <div class="toolbar">
+    <a class="btn {{ 'btn' if not only_open else 'ghost' }}" href="{{ url_for('alerts.index') }}">全部</a>
+    <a class="btn {{ 'btn' if only_open else 'ghost' }}" href="{{ url_for('alerts.index', open=1) }}">只看未处理</a>
+    <form method="post" action="{{ url_for('alerts.resolve_all') }}" style="margin-left:auto">
+      <button class="btn small secondary" type="submit">全部标记处理</button>
+    </form>
+  </div>
+  <table>
+    <thead><tr><th>时间</th><th>级别</th><th>类型</th><th>站点</th><th>信息</th>
+                <th>运行</th><th>状态</th><th></th></tr></thead>
+    <tbody>
+    {% for a in alerts %}
+      <tr>
+        <td class="mono">{{ fmt_ts(a.created_at) }}</td>
+        <td>{{ severity_badge(a.severity) }}</td>
+        <td class="mono">{{ a.alert_type }}</td>
+        <td class="mono">{{ a.site_code or '—' }}</td>
+        <td style="max-width:420px">{{ a.message }}</td>
+        <td>
+          {% if a.run_id %}
+            <a href="{{ url_for('tasks.detail', run_id=a.run_id) }}">#{{ a.run_id }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if a.resolved %}<span class="badge gray">已处理</span>
+          {% else %}<span class="badge red">未处理</span>{% endif %}
+        </td>
+        <td>
+          {% if not a.resolved %}
+            <form method="post" action="{{ url_for('alerts.resolve', alert_id=a.id) }}?open={{ '1' if only_open else '' }}">
+              <button class="btn small ghost" type="submit">标记处理</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="muted">暂无告警</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pager">
+    {% if page > 1 %}<a class="btn small ghost" href="?open={{ '1' if only_open else '' }}&page={{ page-1 }}">上一页</a>{% endif %}
+    <span class="muted">第 {{ page }} / {{ total_pages }} 页</span>
+    {% if page < total_pages %}<a class="btn small ghost" href="?open={{ '1' if only_open else '' }}&page={{ page+1 }}">下一页</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}原始快照 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">
+  原始快照 · <span class="mono">{{ rep.code }}:{{ rep.remote_id }}</span>
+</h1>
+<p class="muted">
+  站点 {{ rep.code }} 的公告 {{ rep.title }}，每次抓取都追加保存列表 JSON 与详情 HTML，
+  可回溯任意历史版本。
+</p>
+{% for snap in snapshots %}
+<div class="panel">
+  <h2>
+    {{ '列表 JSON' if snap.kind == 'list_json' else '详情 HTML' }}
+    <span class="badge gray">{{ snap.media_type }}</span>
+    <span class="muted mono" style="font-weight:400;font-size:12px">
+      抓取于 {{ fmt_ts(snap.fetched_at) }} · snapshot #{{ snap.id }}
+    </span>
+  </h2>
+  <pre class="snapshot">{{ snap.content }}</pre>
+</div>
+{% else %}
+<div class="panel muted">暂无快照</div>
+{% endfor %}
+<a class="btn ghost" href="{{ url_for('notices.detail', canonical_id=rep.canonical_id) }}">返回公告详情</a>
+{% endblock %}

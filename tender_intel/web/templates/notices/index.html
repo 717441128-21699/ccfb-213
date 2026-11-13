@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}公告库 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">公告库（跨站去重后 {{ total }} 条主记录）</h1>
+
+<div class="panel">
+  <form method="get" class="toolbar">
+    <input name="q" value="{{ filters.q }}" placeholder="标题 / 项目编号 / 采购单位" style="min-width:260px">
+    <select name="site">
+      <option value="">全部站点</option>
+      {% for s in sites %}
+        <option value="{{ s.code }}" {% if filters.site == s.code %}selected{% endif %}>{{ s.code }} · {{ s.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="type">
+      <option value="">全部类型</option>
+      <option value="tender" {% if filters.type == 'tender' %}selected{% endif %}>招标</option>
+      <option value="correction" {% if filters.type == 'correction' %}selected{% endif %}>更正</option>
+      <option value="cancellation" {% if filters.type == 'cancellation' %}selected{% endif %}>废标</option>
+    </select>
+    <select name="status">
+      <option value="">全部状态</option>
+      <option value="active" {% if filters.status == 'active' %}selected{% endif %}>有效</option>
+      <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>已废标</option>
+    </select>
+    <button class="btn" type="submit">筛选</button>
+    <a class="btn ghost" href="{{ url_for('notices.index') }}">重置</a>
+  </form>
+</div>
+
+<div class="panel">
+  <table>
+    <thead>
+      <tr><th>类型</th><th>标题 / 项目编号</th><th>采购单位</th><th>预算金额</th>
+          <th>截止时间</th><th>覆盖站点</th><th>状态</th><th>最近事件</th></tr>
+    </thead>
+    <tbody>
+    {% for n in notices %}
+      <tr>
+        <td>{{ type_badge(n.notice_type) }}</td>
+        <td>
+          <a href="{{ url_for('notices.detail', canonical_id=n.id) }}">{{ n.title }}</a>
+          <div class="muted mono" style="font-size:12px">{{ n.project_code or '—' }}</div>
+        </td>
+        <td>{{ n.purchaser or '—' }}</td>
+        <td>{{ fmt_amount(n.budget_amount) }}</td>
+        <td class="mono">{{ fmt_ts(n.deadline_at) }}</td>
+        <td>
+          {% for code in (n.site_codes or '').split(',') if code %}
+            <span class="badge gray">{{ code }}</span>
+          {% else %}<span class="muted">—</span>{% endfor %}
+        </td>
+        <td>
+          {% if n.status == 'cancelled' %}<span class="badge red">已废标</span>
+          {% else %}<span class="badge green">有效</span>{% endif %}
+        </td>
+        <td class="mono">{{ fmt_ts(n.latest_event_at) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="muted">没有匹配的公告</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pager">
+    {% if page > 1 %}
+      <a class="btn small ghost" href="{{ page_link(page-1) }}">上一页</a>
+    {% endif %}
+    <span class="muted">第 {{ page }} / {{ total_pages }} 页</span>
+    {% if page < total_pages %}
+      <a class="btn small ghost" href="{{ page_link(page+1) }}">下一页</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}编辑站点 - 招投标情报{% endblock %}
+{% block content %}
+<h1 class="page-title">编辑站点 · {{ site.code }}</h1>
+<div class="panel" style="max-width: 860px">
+  <form method="post">
+    <div class="grid-2">
+      <label class="field"><span>站点名称</span>
+        <input name="name" value="{{ site.name }}" required style="width:100%"></label>
+      <label class="field"><span>Base URL</span>
+        <input name="base_url" value="{{ site.base_url }}" required style="width:100%"></label>
+      <label class="field"><span>签名 Secret</span>
+        <input name="secret" value="{{ site.secret }}" required style="width:100%"></label>
+      <label class="field"><span>限流（次/分钟）</span>
+        <input name="rate_limit_per_min" type="number" min="1"
+               value="{{ site.rate_limit_per_min }}" style="width:100%"></label>
+      <label class="field"><span>登录账号</span>
+        <input name="username" value="{{ site.username }}" required style="width:100%"></label>
+      <label class="field"><span>登录密码</span>
+        <input name="password" value="{{ site.password }}" required style="width:100%"></label>
+    </div>
+    <label class="field"><span>详情页 CSS 选择器（JSON）</span>
+      <textarea name="selectors_json" rows="8" style="width:100%;font-family:ui-monospace,Consolas,monospace">{{ site.selectors_json }}</textarea>
+    </label>
+    <label class="field" style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" name="enabled" {% if site.enabled %}checked{% endif %}> 启用该站点
+    </label>
+    <div class="toolbar">
+      <button class="btn" type="submit">保存</button>
+      <a class="btn ghost" href="{{ url_for('sites.index') }}">返回</a>
+      {% if 'bid-card' in site.selectors_json %}
+        <form method="post" action="{{ url_for('sites.downgrade_selectors', site_id=site.id) }}" style="margin:0">
+          <button class="btn small ghost" type="submit">一键回退 v1 选择器</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('sites.upgrade_selectors', site_id=site.id) }}" style="margin:0">
+          <button class="btn small ghost" type="submit">一键升级 v2 选择器（站点改版后使用）</button>
+        </form>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

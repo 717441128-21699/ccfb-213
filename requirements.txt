@@ -1,0 +1,5 @@
+# 运行环境只依赖这三个包（Playwright 还需执行一次 playwright install chromium）
+flask>=3.0
+playwright>=1.50
+pytest>=8.0
+requests>=2.31
